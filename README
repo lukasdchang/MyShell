@@ -1,0 +1,39 @@
+# myshell
+notes: 
+    - interactive mode is when the input comes from a terminal, it will print
+        welcome and good-bye messages and a prompt before reading the next command.
+    - batch mode is when the user provides a script file containing commands to be executed.
+    - use the similar tokenization algorithm we used in spell checker to read the input command lines
+
+    Great video to see what exactly we are supposed to be making -> https://youtu.be/I4EWvMFj37g?si=e1oOJF3oE9tsEzhr
+
+Functions to include:
+    - isatty() 
+    - cd
+    - pwd
+    - which
+    - exit
+
+State of the code:
+    - running with a script
+        - for example: ./mysh myscript.sh
+        - works so far
+        - though the code does not continue prompting the user for more commands, it just ends. having trouble fixing this rn
+    - ls
+        - works
+    - echo
+        - works
+    - concatinate
+        - for example: mysh> cat myscript.sh
+                       echo testingmysh>
+                                  ^just gotta fix this formatting
+        - works
+    - concatinate with piping 
+        - for example: mysh> cat myscript.sh | ./mysh
+        - the program goes batshit crazy
+    - exit
+        - works
+        - though it does not print the goodbye message
+    - cd
+        - looks like it works though idk how to display what the current directory it is on
+    - have not tested anything else
