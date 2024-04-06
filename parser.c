@@ -2,21 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glob.h>
+#include "parser.h"
 
 #define MAX_TOKENS 64
 #define MAX_TOKEN_LENGTH 64
 
-// Function prototypes
 void tokenize_input(char *input, char *tokens[]);
 void expand_wildcards(char *tokens[]);
 
 void tokenize_input(char *input, char *tokens[]) {
     // Tokenize input based on whitespace and special characters
-    char *token = strtok(input, " ");
+    char *token = strtok(input, " \n\t\r");
     int num_tokens = 0;
     while (token != NULL && num_tokens < MAX_TOKENS - 1) {
         tokens[num_tokens++] = token;
-        token = strtok(NULL, " ");
+        token = strtok(NULL, " \n\t\r");
     }
     tokens[num_tokens] = NULL;  // Null-terminate the token array
 }
