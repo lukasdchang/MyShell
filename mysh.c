@@ -119,29 +119,6 @@ void process_command(char *cmd) {
     }
 }
 
-void execute_command(char *args[MAX_ARGS]) {
-    // Execute the command using execvp()
-    // Fork a child process
-    pid_t pid = fork();
-    if (pid == -1) {
-        perror("fork");
-        exit(EXIT_FAILURE);
-    } else if (pid == 0) {
-        // Child process
-        execvp(args[0], args);
-        // If execvp returns, there was an error
-        perror("execvp");
-        exit(EXIT_FAILURE);
-    } else {
-        // Parent process
-        // Wait for child to terminate
-        int status;
-        waitpid(pid, &status, 0);
-        // Set last exit status
-        // Use WIFEXITED and WEXITSTATUS macros to get child exit status
-    }
-}
-
 void handle_cd(char *args[MAX_ARGS]) {
     if (args[1] == NULL) {
         // No directory provided
@@ -192,6 +169,29 @@ void handle_exit(char *args[MAX_ARGS]) {
     }
     printf("\n");
     exit(EXIT_SUCCESS);
+}
+
+void execute_command(char *args[MAX_ARGS]) {
+    // Execute the command using execvp()
+    // Fork a child process
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (pid == 0) {
+        // Child process
+        execvp(args[0], args);
+        // If execvp returns, there was an error
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    } else {
+        // Parent process
+        // Wait for child to terminate
+        int status;
+        waitpid(pid, &status, 0);
+        // Set last exit status
+        // Use WIFEXITED and WEXITSTATUS macros to get child exit status
+    }
 }
 
 void tokenize_command(char *cmd, char *args[MAX_ARGS]) {
