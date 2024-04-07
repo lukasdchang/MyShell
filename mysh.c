@@ -143,8 +143,18 @@ void handle_cd(char *args[MAX_ARGS]) {
         // No directory provided
         fprintf(stderr, "cd: missing argument\n");
     } else {
-        if (chdir(args[1]) != 0) {
-            perror("cd");
+        // Check if the first argument contains a slash character
+        if (strchr(args[1], '/') != NULL) {
+            // Attempt to change directory to the provided path
+            if (chdir(args[1]) != 0) {
+                perror("cd");
+            }
+        } else {
+            // No slash character, treat it as a regular directory name
+            // Change directory using the provided name
+            if (chdir(args[1]) != 0) {
+                perror("cd");
+            }
         }
     }
 }

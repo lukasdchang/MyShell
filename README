@@ -36,14 +36,17 @@ State of the code:
         - the program goes batshit crazy
     - exit
         - works
-        - must print goodbye message
     - cd
         - basic functionality
             - works
         - pathnames (/)
-            - nope
-        - base names
+            - works
+        - bare names
     - pwd
         - works
     - which
         - not yet tested
+
+for lukas (ignore)
+project directory: /Users/lukaschang/desktop/rutgers/y2s2/cs214/myshell2/myshell2
+test directory: /Users/lukaschang/desktop/rutgers/y2s2/cs214/myshell2/myshell2/directory_1/directory_2
