@@ -38,7 +38,11 @@ State of the code:
         - works
         - must print goodbye message
     - cd
-        - works
+        - basic functionality
+            - works
+        - pathnames (/)
+            - nope
+        - base names
     - pwd
         - works
     - which
