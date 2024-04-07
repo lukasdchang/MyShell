@@ -15,10 +15,16 @@ Functions to include:
     - exit
 
 State of the code:
+    - reading the command
+        - tokenizing
+            - works
+        - wildcards
+        - redirection
+        - pipelines
+        - conditionals
+
     - running with a script
-        - for example: ./mysh myscript.sh
-        - works so far
-        - though the code does not continue prompting the user for more commands, it just ends. having trouble fixing this rn
+        - works
     - ls
         - works
     - echo
@@ -30,7 +36,10 @@ State of the code:
         - the program goes batshit crazy
     - exit
         - works
-        - though it does not print the goodbye message
+        - must print goodbye message
     - cd
-        - looks like it works though idk how to display what the current directory it is on
-    - have not tested anything else
+        - works
+    - pwd
+        - works
+    - which
+        - not yet tested
