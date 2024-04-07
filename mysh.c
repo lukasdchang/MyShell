@@ -113,6 +113,10 @@ void process_command(char *cmd) {
         // External command
         execute_command(args);
     }
+
+    if(strcmp(args[0], "cat") == 0){
+        printf("\n");
+    }
 }
 
 void execute_command(char *args[MAX_ARGS]) {

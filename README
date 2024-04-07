@@ -24,9 +24,6 @@ State of the code:
     - echo
         - works
     - concatinate
-        - for example: mysh> cat myscript.sh
-                       echo testingmysh>
-                                  ^just gotta fix this formatting
         - works
     - concatinate with piping 
         - for example: mysh> cat myscript.sh | ./mysh
