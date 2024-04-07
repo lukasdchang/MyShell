@@ -7,12 +7,6 @@ notes:
 
     Great video to see what exactly we are supposed to be making -> https://youtu.be/I4EWvMFj37g?si=e1oOJF3oE9tsEzhr
 
-Functions to include:
-    - isatty() 
-    - cd
-    - pwd
-    - which
-    - exit
 
 State of the code:
     - reading the command
@@ -21,20 +15,19 @@ State of the code:
         - wildcards
             - works
         - redirection
+            - does not work
         - pipelines
+            - does not work
         - conditionals
 
     - running with a script
-        - works
+        - running echo in a script prints the entire script
     - ls
         - works
     - echo
         - works
-    - concatinate
+    - cat
         - works
-    - concatinate with piping 
-        - for example: mysh> cat myscript.sh | ./mysh
-        - the program goes batshit crazy
     - exit
         - works
         - "Additionally, exit should print any arguments it receives, separated by spaces."
