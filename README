@@ -45,6 +45,13 @@ State of the code:
     - which
         - works
 
+    How to run: 
+        make 
+            compiles the code
+        make clean 
+            deletes compile file and empties test2.txt
+
+
 for lukas (ignore)
 project directory: /Users/lukaschang/desktop/rutgers/y2s2/cs214/myshell2/myshell2
 test directory: /Users/lukaschang/desktop/rutgers/y2s2/cs214/myshell2/myshell2/directory_1/directory_2
