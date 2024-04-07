@@ -44,18 +44,35 @@ int main(int argc, char *argv[]) {
         close(script_fd);
     } else {
         // If script file is provided as command line argument, execute it
-        if (argc == 2) {
-            int script_fd = open(argv[1], O_RDONLY);
-            if (script_fd == -1) {
-                perror("Error opening script file");
-                exit(EXIT_FAILURE);
+        // Inside the else block for batch mode processing with argc == 2
+    if (argc == 2) {
+        int script_fd = open(argv[1], O_RDONLY);
+        if (script_fd == -1) {
+            perror("Error opening script file");
+            exit(EXIT_FAILURE);
+        }
+        char script_buffer[MAX_CMD_LEN * MAX_ARGS]; // Adjust size as necessary
+        ssize_t total_bytes_read = read(script_fd, script_buffer, sizeof(script_buffer));
+        if (total_bytes_read < 0) {
+            perror("read");
+            exit(EXIT_FAILURE);
+        }
+        script_buffer[total_bytes_read] = '\0'; // Null-terminate the string
+
+        char *command_start = script_buffer;
+        for (ssize_t i = 0; i < total_bytes_read; ++i) {
+            if (script_buffer[i] == '\n' || script_buffer[i] == '\0') {
+                script_buffer[i] = '\0'; // Replace newline with null terminator
+                process_command(command_start, &continue_shell);
+                command_start = script_buffer + i + 1; // Move to the start of the next command
             }
-            while ((bytes_read = read(script_fd, command, sizeof(command))) > 0) {
-                command[bytes_read] = '\0';
-                process_command(command, &continue_shell);
-            }
-            close(script_fd);
-        } else {
+        }
+        if (command_start < script_buffer + total_bytes_read) {
+            process_command(command_start, &continue_shell);
+        }
+
+        close(script_fd);
+    } else {
             // Interactive mode
             welcome_message();
             while (continue_shell) {

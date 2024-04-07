@@ -19,9 +19,10 @@ State of the code:
         - pipelines
             - does not work
         - conditionals
+            - does not work
 
     - running with a script
-        - running echo in a script prints the entire script
+        - works
     - ls
         - works
     - echo
