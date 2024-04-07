@@ -160,8 +160,10 @@ void handle_cd(char *args[MAX_ARGS]) {
     for (int i = 0; directories[i] != NULL; i++) {
         snprintf(path, sizeof(path), "%s/%s", directories[i], args[1]);
         // Check if the directory exists in the current path
+        printf("%s\n", path);
         if (access(path, F_OK) == 0) {
             // Attempt to change directory to the found path
+            // printf("%s\n", path);
             if (chdir(path) != 0) {
                 perror("cd");
             }
@@ -183,26 +185,36 @@ void handle_pwd() {
 }
 
 void handle_which(char *args[MAX_ARGS]) {
+    // Check if the correct number of arguments is provided
     if (args[1] == NULL) {
-        // No program name provided
         fprintf(stderr, "which: missing argument\n");
-    } else {
-        // Search for the program in PATH
-        // Implement your search logic here
-        char *path = getenv("PATH");
-        char *token = strtok(path, ":");
-        while (token != NULL) {
-            char command[MAX_CMD_LEN];
-            snprintf(command, sizeof(command), "%s/%s", token, args[1]);
-            if (access(command, X_OK) == 0) {
-                printf("%s\n", command);
-                return;
-            }
-            token = strtok(NULL, ":");
-        }
-        // Program not found
-        fprintf(stderr, "%s: command not found\n", args[1]);
+        return;
+    } else if (args[2] != NULL) {
+        fprintf(stderr, "which: too many arguments\n");
+        return;
     }
+    
+    // Check if the program is a built-in command
+    if (strcmp(args[1], "cd") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "which") == 0 || strcmp(args[1], "exit") == 0) {
+        fprintf(stderr, "which: %s is a built-in command\n", args[1]);
+        return;
+    }
+    
+    // Search for the program in the specified directories
+    char *directories[] = {"/usr/local/bin", "/usr/bin", "/bin", NULL};
+    char path[MAX_CMD_LEN];
+    for (int i = 0; directories[i] != NULL; i++) {
+        snprintf(path, sizeof(path), "%s/%s", directories[i], args[1]);
+        // Check if the program exists in the current path
+        if (access(path, F_OK | X_OK) == 0) {
+            // Print the path and return
+            printf("%s\n", path);
+            return;
+        }
+    }
+    
+    // Program not found
+    fprintf(stderr, "which: %s: command not found\n", args[1]);
 }
 
 int handle_exit(char *args[MAX_ARGS]) {
