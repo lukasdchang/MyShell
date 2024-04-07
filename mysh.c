@@ -142,21 +142,35 @@ void handle_cd(char *args[MAX_ARGS]) {
     if (args[1] == NULL) {
         // No directory provided
         fprintf(stderr, "cd: missing argument\n");
-    } else {
-        // Check if the first argument contains a slash character
-        if (strchr(args[1], '/') != NULL) {
-            // Attempt to change directory to the provided path
-            if (chdir(args[1]) != 0) {
+        return;
+    }
+    
+    // Pathnames
+    if (strchr(args[1], '/') != NULL) {
+        // Attempt to change directory to the provided path
+        if (chdir(args[1]) != 0) {
+            perror("cd");
+        }
+        return;
+    }
+    
+    // Barenames
+    char *directories[] = {"/usr/local/bin", "/usr/bin", "/bin", NULL};
+    char path[MAX_CMD_LEN];
+    for (int i = 0; directories[i] != NULL; i++) {
+        snprintf(path, sizeof(path), "%s/%s", directories[i], args[1]);
+        // Check if the directory exists in the current path
+        if (access(path, F_OK) == 0) {
+            // Attempt to change directory to the found path
+            if (chdir(path) != 0) {
                 perror("cd");
             }
-        } else {
-            // No slash character, treat it as a regular directory name
-            // Change directory using the provided name
-            if (chdir(args[1]) != 0) {
-                perror("cd");
-            }
+            return;
         }
     }
+    
+    // Directory not found in the specified directories
+    fprintf(stderr, "cd: %s: No such file or directory\n", args[1]);
 }
 
 void handle_pwd() {

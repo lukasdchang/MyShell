@@ -19,6 +19,7 @@ State of the code:
         - tokenizing
             - works
         - wildcards
+            - works
         - redirection
         - pipelines
         - conditionals
@@ -36,12 +37,15 @@ State of the code:
         - the program goes batshit crazy
     - exit
         - works
+        - "Additionally, exit should print any arguments it receives, separated by spaces."
+            - not sure if it does that
     - cd
         - basic functionality
             - works
         - pathnames (/)
             - works
         - bare names
+            - need to test on iLab
     - pwd
         - works
     - which
