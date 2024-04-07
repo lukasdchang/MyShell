@@ -13,12 +13,12 @@
 
 void welcome_message();
 void goodbye_message();
-void process_command(char *cmd);
+void process_command(char *cmd, int *continue_shell);
 void execute_command(char *args[MAX_ARGS]);
 void handle_cd(char *args[MAX_ARGS]);
 void handle_pwd();
 void handle_which(char *args[MAX_ARGS]);
-void handle_exit(char *args[MAX_ARGS]);
+int handle_exit(char *args[MAX_ARGS]);
 void tokenize_command(char *cmd, char *args[MAX_ARGS]);
 void expand_wildcards(char *args[MAX_ARGS]);
 void handle_redirection(char *args[MAX_ARGS]);
@@ -27,6 +27,7 @@ void handle_pipes(char *args[MAX_ARGS]);
 int main(int argc, char *argv[]) {
     char command[MAX_CMD_LEN];
     ssize_t bytes_read;
+    int continue_shell = 1; // Flag to indicate whether the shell should continue running
     
     // Check if running in batch mode or interactive mode
     if (argc == 2 && !isatty(STDIN_FILENO)) {
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]) {
         }
         while ((bytes_read = read(script_fd, command, sizeof(command))) > 0) {
             command[bytes_read] = '\0';
-            process_command(command);
+            process_command(command, &continue_shell);
         }
         close(script_fd);
     } else {
@@ -51,13 +52,13 @@ int main(int argc, char *argv[]) {
             }
             while ((bytes_read = read(script_fd, command, sizeof(command))) > 0) {
                 command[bytes_read] = '\0';
-                process_command(command);
+                process_command(command, &continue_shell);
             }
             close(script_fd);
         } else {
             // Interactive mode
             welcome_message();
-            while (1) {
+            while (continue_shell) {
                 printf("mysh> ");
                 fflush(stdout);
                 if ((bytes_read = read(STDIN_FILENO, command, sizeof(command))) < 0) {
@@ -68,7 +69,7 @@ int main(int argc, char *argv[]) {
                     break;
                 }
                 command[bytes_read] = '\0';
-                process_command(command);
+                process_command(command, &continue_shell);
             }
             goodbye_message();
         }
@@ -76,7 +77,6 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
-
 
 void welcome_message() {
     printf("Welcome to my shell!\n");
@@ -86,7 +86,7 @@ void goodbye_message() {
     printf("Exiting my shell.\n");
 }
 
-void process_command(char *cmd) {
+void process_command(char *cmd, int *continue_shell) {
     // Tokenize the command
     char *args[MAX_ARGS];
     tokenize_command(cmd, args);
@@ -108,7 +108,7 @@ void process_command(char *cmd) {
     } else if (strcmp(args[0], "which") == 0) {
         handle_which(args);
     } else if (strcmp(args[0], "exit") == 0) {
-        handle_exit(args);
+        *continue_shell = handle_exit(args); // Modify continue_shell flag
     } else {
         // External command
         execute_command(args);
@@ -162,13 +162,13 @@ void handle_which(char *args[MAX_ARGS]) {
     }
 }
 
-void handle_exit(char *args[MAX_ARGS]) {
+int handle_exit(char *args[MAX_ARGS]) {
     // Print arguments
     for (int i = 1; args[i] != NULL; i++) {
         printf("%s ", args[i]);
     }
     printf("\n");
-    exit(EXIT_SUCCESS);
+    return 0; // Indicate that the shell should continue running
 }
 
 void execute_command(char *args[MAX_ARGS]) {
