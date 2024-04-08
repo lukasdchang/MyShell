@@ -104,20 +104,14 @@ void goodbye_message() {
 }
 
 void process_command(char *cmd, int *continue_shell) {
-    // Tokenize the command
     char *args[MAX_ARGS];
     tokenize_command(cmd, args);
-    
-    // Expand wildcards
     expand_wildcards(args);
-    
-    // Handle redirection
-    handle_redirection(args);
-    
-    // Handle pipes
+
+    // Removed direct call to handle_redirection
+
     handle_pipes(args);
     
-    // Check for built-in commands
     if (strcmp(args[0], "cd") == 0) {
         handle_cd(args);
     } else if (strcmp(args[0], "pwd") == 0) {
@@ -125,35 +119,28 @@ void process_command(char *cmd, int *continue_shell) {
     } else if (strcmp(args[0], "which") == 0) {
         handle_which(args);
     } else if (strcmp(args[0], "exit") == 0) {
-        *continue_shell = handle_exit(args); // Modify continue_shell flag
+        *continue_shell = handle_exit(args);
     } else {
-        // External command
         execute_command(args);
     }
 }
 
 void execute_command(char *args[MAX_ARGS]) {
-    // Execute the command using execvp()
-    // Fork a child process
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
-        // Child process
+        handle_redirection(args); // Moved inside child process
         execvp(args[0], args);
-        // If execvp returns, there was an error
         perror("execvp");
         exit(EXIT_FAILURE);
     } else {
-        // Parent process
-        // Wait for child to terminate
         int status;
         waitpid(pid, &status, 0);
-        // Set last exit status
-        // Use WIFEXITED and WEXITSTATUS macros to get child exit status
     }
 }
+
 
 void handle_cd(char *args[MAX_ARGS]) {
     if (args[1] == NULL) {
@@ -278,42 +265,32 @@ void expand_wildcards(char *args[MAX_ARGS]) {
 }
 
 void handle_redirection(char *args[MAX_ARGS]) {
-    // Handle input/output redirection
     for (int i = 0; args[i] != NULL; i++) {
-        if (strcmp(args[i], "<") == 0) {
-            // Input redirection
-            int fd = open(args[i + 1], O_RDONLY);
+        if (strcmp(args[i], "<") == 0 || strcmp(args[i], ">") == 0) {
+            int fd;
+            if (strcmp(args[i], "<") == 0) {
+                fd = open(args[i + 1], O_RDONLY);
+            } else { // ">"
+                fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0640);
+            }
             if (fd == -1) {
                 perror("open");
                 exit(EXIT_FAILURE);
             }
-            if (dup2(fd, STDIN_FILENO) == -1) {
+            if (dup2(fd, strcmp(args[i], "<") == 0 ? STDIN_FILENO : STDOUT_FILENO) == -1) {
                 perror("dup2");
                 exit(EXIT_FAILURE);
             }
             close(fd);
-            // Remove redirection tokens and filename from argument list
-            args[i] = NULL;
-            args[i + 1] = NULL;
-        } else if (strcmp(args[i], ">") == 0) {
-            // Output redirection
-            int fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0640);
-            if (fd == -1) {
-                perror("open");
-                exit(EXIT_FAILURE);
+
+            // Shift args left over redirection operators
+            for (int j = i; args[j - 1] != NULL; j++) {
+                args[j] = args[j + 2];
             }
-            if (dup2(fd, STDOUT_FILENO) == -1) {
-                perror("dup2");
-                exit(EXIT_FAILURE);
-            }
-            close(fd);
-            // Remove redirection tokens and filename from argument list
-            args[i] = NULL;
-            args[i + 1] = NULL;
+            i--; // Adjust index to reflect shifted elements
         }
     }
 }
-
 void handle_pipes(char *args[MAX_ARGS]) {
     // Handle pipes
     for (int i = 0; args[i] != NULL; i++) {
