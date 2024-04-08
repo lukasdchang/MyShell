@@ -26,7 +26,8 @@ cat output.txt
 echo
 
 echo Testing pipelines:
-echo No current test exist yet
+echo hi | echo hello
+ls | wc -w
 echo
 
 echo Testing conditionals:
