@@ -10,6 +10,59 @@ notes:
 
     Great video to see what exactly we are supposed to be making -> https://youtu.be/I4EWvMFj37g?si=e1oOJF3oE9tsEzhr
 
+Testing:
+    - tokenizing
+        - expected:
+        - how it fails: 
+        - how to test:
+    - Wildcards
+        - expected:
+        - how it fails: 
+        - how to test:
+    - Redirection
+        - expected:
+        - how it fails: 
+        - how to test:
+    - Pipelines
+        - expected:
+        - how it fails: 
+        - how to test:
+    - Conditionals
+        - expected:
+        - how it fails: 
+        - how to test:
+    - Running with script (Batch mode)
+        - expected:
+        - how it fails: 
+        - how to test:
+    - exit
+        - expected:
+        - how it fails: 
+        - how to test:
+    - cd
+        - expected:
+        - how it fails: 
+        - how to test:
+    - pwd
+        - expected:
+        - how it fails: 
+        - how to test:
+    - which
+        - expected:
+        - how it fails: 
+        - how to test:
+    - tokenizing
+        - expected:
+        - how it fails: 
+        - how to test:
+    - tokenizing
+        - expected:
+        - how it fails: 
+        - how to test:
+    - tokenizing
+        - expected:
+        - how it fails: 
+        - how to test:
 
 State of the code:
     - reading the command
@@ -19,12 +72,8 @@ State of the code:
             - works
         - redirection
             - works 
-            - fix formatting 
-            - for example:
-                - mysh> cat < test1.txt
-                  this is content from test1.txtmysh> 
         - pipelines
-            - does not work
+            - works
         - conditionals
             - works
 
