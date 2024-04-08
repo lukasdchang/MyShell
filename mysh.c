@@ -108,13 +108,17 @@ void process_command(char *cmd, int *continue_shell) {
     char *args[MAX_ARGS];
     tokenize_command(cmd, args);
     
-    // Expand wildcards
+    int original_stdin = dup(STDIN_FILENO);
+    int original_stdout = dup(STDOUT_FILENO);
+    if (original_stdin == -1 || original_stdout == -1) {
+        perror("dup");
+        exit(EXIT_FAILURE);
+    }
+
     expand_wildcards(args);
     
-    // Handle redirection
     handle_redirection(args);
     
-    // Handle pipes
     handle_pipes(args);
     
     // Check for built-in commands
@@ -128,19 +132,34 @@ void process_command(char *cmd, int *continue_shell) {
         *continue_shell = handle_exit(args); // Modify continue_shell flag
     } else {
         // External command
+        //print args here//
+        // printf("Arguments: ");
+        // for (int i = 0; args[i] != NULL; i++) {
+        //     printf("%s ", args[i]);
+        // }
+        // printf("\n");
         execute_command(args);
     }
+    
+    if (dup2(original_stdin, STDIN_FILENO) == -1 || dup2(original_stdout, STDOUT_FILENO) == -1) {
+        perror("dup2");
+        exit(EXIT_FAILURE);
+    }
+    close(original_stdin);
+    close(original_stdout);
 }
 
 void execute_command(char *args[MAX_ARGS]) {
     // Execute the command using execvp()
     // Fork a child process
     pid_t pid = fork();
-    if (pid == -1) {
+    // printf("pid: %i\n", pid);
+    if (pid < 0) {
         perror("fork");
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         // Child process
+        // printf("Child Process\n");
         execvp(args[0], args);
         // If execvp returns, there was an error
         perror("execvp");
@@ -148,7 +167,9 @@ void execute_command(char *args[MAX_ARGS]) {
     } else {
         // Parent process
         // Wait for child to terminate
+        // printf("Parent Process\n");
         int status;
+        // printf("status%i\n", &status);
         waitpid(pid, &status, 0);
         // Set last exit status
         // Use WIFEXITED and WEXITSTATUS macros to get child exit status
@@ -249,6 +270,7 @@ void tokenize_command(char *cmd, char *args[MAX_ARGS]) {
     int i = 0;
     token = strtok(cmd, " \n");
     while (token != NULL && i < MAX_ARGS - 1) {
+        //printf("Command: %s\n", token);
         args[i++] = token;
         token = strtok(NULL, " \n");
     }
@@ -278,38 +300,51 @@ void expand_wildcards(char *args[MAX_ARGS]) {
 }
 
 void handle_redirection(char *args[MAX_ARGS]) {
-    // Handle input/output redirection
-    for (int i = 0; args[i] != NULL; i++) {
-        if (strcmp(args[i], "<") == 0) {
-            // Input redirection
-            int fd = open(args[i + 1], O_RDONLY);
-            if (fd == -1) {
-                perror("open");
-                exit(EXIT_FAILURE);
-            }
-            if (dup2(fd, STDIN_FILENO) == -1) {
-                perror("dup2");
-                exit(EXIT_FAILURE);
-            }
-            close(fd);
-            // Remove redirection tokens and filename from argument list
-            args[i] = NULL;
-            args[i + 1] = NULL;
-        } else if (strcmp(args[i], ">") == 0) {
-            // Output redirection
-            int fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0640);
-            if (fd == -1) {
-                perror("open");
-                exit(EXIT_FAILURE);
-            }
-            if (dup2(fd, STDOUT_FILENO) == -1) {
-                perror("dup2");
-                exit(EXIT_FAILURE);
-            }
-            close(fd);
-            // Remove redirection tokens and filename from argument list
-            args[i] = NULL;
-            args[i + 1] = NULL;
+    int i;
+    char* infile = NULL;
+    char* outfile = NULL;
+    int in_index = -1;
+    int out_index = -1;
+
+    for(i = 0; args[i] != NULL; i++){
+        if(strcmp(args[i], "<") == 0){
+            infile = args[i + 1];
+            in_index = i;
+        } else if(strcmp(args[i], ">") == 0){
+            outfile = args[i + 1];
+            out_index = i;
+        }        
+    }
+
+    if(infile != NULL) {
+        int fd_in = open(infile, O_RDONLY);
+        if(fd_in < 0) {
+            perror("Error opening input file");
+            exit(EXIT_FAILURE);
+        }
+
+        dup2(fd_in, STDIN_FILENO);
+        close(fd_in);
+
+        if(in_index >= 0){
+            args[in_index] = NULL;
+            args[in_index + 1] = NULL;
+        }
+    }
+
+    if(outfile != NULL) {
+        int fd_out = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        if(fd_out == -1) {
+            perror("Error opening output file");
+            exit(EXIT_FAILURE);
+        }
+
+        dup2(fd_out, STDOUT_FILENO);
+        close(fd_out);
+
+        if(out_index >= 0){
+            args[out_index] = NULL;
+            args[out_index + 1] = NULL;
         }
     }
 }
