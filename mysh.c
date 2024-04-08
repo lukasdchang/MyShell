@@ -7,6 +7,9 @@
 #include <fcntl.h>
 #include <glob.h>
 #include <errno.h>
+#include <limits.h> // For PATH_MAX
+int last_command_success = 1; // Global variable; 1 for success, 0 for failure
+
 
 #define MAX_CMD_LEN 1024
 #define MAX_ARGS 64
@@ -23,6 +26,7 @@ void tokenize_command(char *cmd, char *args[MAX_ARGS]);
 void expand_wildcards(char *args[MAX_ARGS]);
 void handle_redirection(char *args[MAX_ARGS]);
 void handle_pipes(char *args[MAX_ARGS]);
+char *find_command_path(const char *cmd, char *fullpath);
 
 int main(int argc, char *argv[]) {
     char command[MAX_CMD_LEN];
@@ -147,64 +151,75 @@ void process_command(char *cmd, int *continue_shell) {
     }
 }
 
+char *find_command_path(const char *cmd, char *fullpath) {
+    if (strchr(cmd, '/')) {
+        strcpy(fullpath, cmd);
+        return fullpath;
+    }
+
+    const char *path_env = getenv("PATH");
+    if (!path_env) return NULL;
+
+    char *path = strdup(path_env);
+    char *dir = strtok(path, ":");
+
+    while (dir != NULL) {
+        snprintf(fullpath, PATH_MAX, "%s/%s", dir, cmd);
+        if (access(fullpath, X_OK) == 0) {
+            free(path);
+            return fullpath;
+        }
+        dir = strtok(NULL, ":");
+    }
+
+    free(path);
+    return NULL;
+}
+
+
 void execute_command(char *args[MAX_ARGS]) {
-    // Execute the command using execvp()
-    // Fork a child process
+
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
-        // Child process
-        execvp(args[0], args);
-        // If execvp returns, there was an error
-        perror("execvp");
+        char fullpath[PATH_MAX];
+        if (!find_command_path(args[0], fullpath)) {
+            fprintf(stderr, "%s: Command not found\n", args[0]);
+            exit(EXIT_FAILURE);
+        }
+        handle_redirection(args);
+        execv(fullpath, args);
+        perror("execv");
         exit(EXIT_FAILURE);
     } else {
-        // Parent process
-        // Wait for child to terminate
         int status;
         waitpid(pid, &status, 0);
-        // Set last exit status
-        // Use WIFEXITED and WEXITSTATUS macros to get child exit status
+        if (WIFEXITED(status)) {
+            last_command_success = (WEXITSTATUS(status) == 0) ? 1 : 0;
+        } else {
+            last_command_success = 0; // Consider it a failure if the child didn't exit normally
+        }
+    }
+
+    if (strcmp(args[0], "cat") == 0) { // add new line if cat was run (formatting purposes)
+        printf("\n");
     }
 }
 
 void handle_cd(char *args[MAX_ARGS]) {
-    if (args[1] == NULL) {
-        // No directory provided
-        fprintf(stderr, "cd: missing argument\n");
+    // Check if the correct number of arguments is provided.
+    if (args[1] == NULL || args[2] != NULL) {
+        fprintf(stderr, "cd: wrong number of arguments\n");
         return;
     }
-    
-    // Pathnames
-    if (strchr(args[1], '/') != NULL) {
-        // Attempt to change directory to the provided path
-        if (chdir(args[1]) != 0) {
-            perror("cd");
-        }
-        return;
+
+    // Attempt to change to the directory specified by args[1].
+    if (chdir(args[1]) != 0) {
+        // On failure, perror will display the error relative to the command 'cd'.
+        perror("cd");
     }
-    
-    // Barenames
-    char *directories[] = {"/usr/local/bin", "/usr/bin", "/bin", NULL};
-    char path[MAX_CMD_LEN];
-    for (int i = 0; directories[i] != NULL; i++) {
-        snprintf(path, sizeof(path), "%s/%s", directories[i], args[1]);
-        // Check if the directory exists in the current path
-        printf("%s\n", path);
-        if (access(path, F_OK) == 0) {
-            // Attempt to change directory to the found path
-            // printf("%s\n", path);
-            if (chdir(path) != 0) {
-                perror("cd");
-            }
-            return;
-        }
-    }
-    
-    // Directory not found in the specified directories
-    fprintf(stderr, "cd: %s: No such file or directory\n", args[1]);
 }
 
 void handle_pwd() {
