@@ -18,4 +18,3 @@ $(TARGET): $(OBJ)
 
 clean:
 	rm -f $(TARGET) $(OBJ)
-	> test2.txt

@@ -157,6 +157,7 @@ void process_command(char *cmd, int *continue_shell) {
 
 
 void execute_command(char *args[MAX_ARGS]) {
+
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
@@ -179,6 +180,10 @@ void execute_command(char *args[MAX_ARGS]) {
         } else {
             last_command_success = 0; // Consider it a failure if the child didn't exit normally
         }
+    }
+
+    if (strcmp(args[0], "cat") == 0) { // add new line if cat was run (formatting purposes)
+        printf("\n");
     }
 }
 
