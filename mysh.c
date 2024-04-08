@@ -8,11 +8,11 @@
 #include <glob.h>
 #include <errno.h>
 #include <limits.h> // For PATH_MAX
-int last_command_success = 1; // Global variable; 1 for success, 0 for failure
 
 
 #define MAX_CMD_LEN 1024
 #define MAX_ARGS 64
+int last_command_success = 1; // Global variable; 1 for success, 0 for failure
 
 void welcome_message();
 void goodbye_message();
@@ -142,8 +142,6 @@ void process_command(char *cmd, int *continue_shell) {
         }
     }
 
-    // Continue as before after handling conditionals
-
     // Expand wildcards (before splitting the command for pipes)
     expand_wildcards(args);
 
@@ -161,8 +159,6 @@ void process_command(char *cmd, int *continue_shell) {
         handle_pipes(args);
         return;
     }
-
-    // Handle redirection (for non-piped commands)
     
     // Check for built-in commands
     if (strcmp(args[0], "cd") == 0) {
@@ -230,6 +226,10 @@ void execute_command(char *args[MAX_ARGS]) {
         } else {
             last_command_success = 0; // Consider it a failure if the child didn't exit normally
         }
+    }
+
+    if (strcmp(args[0], "cat") == 0) { // add new line if cat was run (formatting purposes)
+        printf("\n");
     }
 }
 
