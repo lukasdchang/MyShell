@@ -11,6 +11,7 @@
 
 #define MAX_CMD_LEN 1024
 #define MAX_ARGS 64
+int last_command_success = 1; // Global variable; 1 for success, 0 for failure
 
 void welcome_message();
 void goodbye_message();
@@ -100,23 +101,60 @@ void goodbye_message() {
 }
 
 void process_command(char *cmd, int *continue_shell) {
+    while (*cmd == ' ' || *cmd == '\t') cmd++;
+
+    // Handle Comments
+    if (*cmd == '#' || *cmd == '\0') {
+        return; // Ignore comments and empty lines
+    }
+
     char *args[MAX_ARGS];
     tokenize_command(cmd, args);
+    
+    if (args[0] == NULL) {
+        return; // Empty command
+    }
+
+    // Conditional handling for 'then' and 'else'
+    if (strcmp(args[0], "then") == 0) {
+        if (!last_command_success) {
+            return; // Skip the command following 'then' if the last command failed
+        }
+        // Shift args to remove 'then'
+        for (int i = 0; args[i] != NULL; i++) {
+            args[i] = args[i + 1];
+        }
+    } else if (strcmp(args[0], "else") == 0) {
+        if (last_command_success) {
+            return; // Skip the command following 'else' if the last command succeeded
+        }
+        // Shift args to remove 'else'
+        for (int i = 0; args[i] != NULL; i++) {
+            args[i] = args[i + 1];
+        }
+    }
+
+    // Proceed to handle wildcard expansion, piping, redirection, and execution
     expand_wildcards(args);
-    handle_pipes(args);
+    handle_pipes(args); // Note: You might want to modify handle_pipes to update last_command_success based on command execution result.
 
     if (strcmp(args[0], "cd") == 0) {
         handle_cd(args);
+        last_command_success = 1; // Assuming 'cd' command execution is always successful for simplification
     } else if (strcmp(args[0], "pwd") == 0) {
         handle_pwd();
+        last_command_success = 1; // Assuming 'pwd' always succeeds
     } else if (strcmp(args[0], "which") == 0) {
         handle_which(args);
+        last_command_success = 1; // Assuming 'which' always succeeds
     } else if (strcmp(args[0], "exit") == 0) {
         *continue_shell = handle_exit(args);
+        last_command_success = 1; // Assuming 'exit' handling always succeeds
     } else {
         execute_command(args);
     }
 }
+
 
 void execute_command(char *args[MAX_ARGS]) {
     pid_t pid = fork();
@@ -136,6 +174,11 @@ void execute_command(char *args[MAX_ARGS]) {
     } else {
         int status;
         waitpid(pid, &status, 0);
+        if (WIFEXITED(status)) {
+            last_command_success = (WEXITSTATUS(status) == 0) ? 1 : 0;
+        } else {
+            last_command_success = 0; // Consider it a failure if the child didn't exit normally
+        }
     }
 }
 
@@ -166,41 +209,19 @@ char *find_command_path(const char *cmd, char *fullpath) {
 
 
 void handle_cd(char *args[MAX_ARGS]) {
-    if (args[1] == NULL) {
-        // No directory provided
-        fprintf(stderr, "cd: missing argument\n");
+    // Check if the correct number of arguments is provided.
+    if (args[1] == NULL || args[2] != NULL) {
+        fprintf(stderr, "cd: wrong number of arguments\n");
         return;
     }
-    
-    // Pathnames
-    if (strchr(args[1], '/') != NULL) {
-        // Attempt to change directory to the provided path
-        if (chdir(args[1]) != 0) {
-            perror("cd");
-        }
-        return;
+
+    // Attempt to change to the directory specified by args[1].
+    if (chdir(args[1]) != 0) {
+        // On failure, perror will display the error relative to the command 'cd'.
+        perror("cd");
     }
-    
-    // Barenames
-    char *directories[] = {"/usr/local/bin", "/usr/bin", "/bin", NULL};
-    char path[MAX_CMD_LEN];
-    for (int i = 0; directories[i] != NULL; i++) {
-        snprintf(path, sizeof(path), "%s/%s", directories[i], args[1]);
-        // Check if the directory exists in the current path
-        printf("%s\n", path);
-        if (access(path, F_OK) == 0) {
-            // Attempt to change directory to the found path
-            // printf("%s\n", path);
-            if (chdir(path) != 0) {
-                perror("cd");
-            }
-            return;
-        }
-    }
-    
-    // Directory not found in the specified directories
-    fprintf(stderr, "cd: %s: No such file or directory\n", args[1]);
 }
+
 
 void handle_pwd() {
     char cwd[1024];
