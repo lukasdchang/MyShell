@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <glob.h>
 #include <errno.h>
+#include <limits.h> // For PATH_MAX
 
 #define MAX_CMD_LEN 1024
 #define MAX_ARGS 64
@@ -23,15 +24,14 @@ void tokenize_command(char *cmd, char *args[MAX_ARGS]);
 void expand_wildcards(char *args[MAX_ARGS]);
 void handle_redirection(char *args[MAX_ARGS]);
 void handle_pipes(char *args[MAX_ARGS]);
+char *find_command_path(const char *cmd, char *fullpath);
 
 int main(int argc, char *argv[]) {
     char command[MAX_CMD_LEN];
     ssize_t bytes_read;
-    int continue_shell = 1; // Flag to indicate whether the shell should continue running
+    int continue_shell = 1;
     
-    // Check if running in batch mode or interactive mode
     if (argc == 2 && !isatty(STDIN_FILENO)) {
-        // Batch mode (input redirected)
         int script_fd = open(argv[1], O_RDONLY);
         if (script_fd == -1) {
             perror("Error opening script file");
@@ -43,37 +43,34 @@ int main(int argc, char *argv[]) {
         }
         close(script_fd);
     } else {
-        // If script file is provided as command line argument, execute it
-        // Inside the else block for batch mode processing with argc == 2
-    if (argc == 2) {
-        int script_fd = open(argv[1], O_RDONLY);
-        if (script_fd == -1) {
-            perror("Error opening script file");
-            exit(EXIT_FAILURE);
-        }
-        char script_buffer[MAX_CMD_LEN * MAX_ARGS]; // Adjust size as necessary
-        ssize_t total_bytes_read = read(script_fd, script_buffer, sizeof(script_buffer));
-        if (total_bytes_read < 0) {
-            perror("read");
-            exit(EXIT_FAILURE);
-        }
-        script_buffer[total_bytes_read] = '\0'; // Null-terminate the string
-
-        char *command_start = script_buffer;
-        for (ssize_t i = 0; i < total_bytes_read; ++i) {
-            if (script_buffer[i] == '\n' || script_buffer[i] == '\0') {
-                script_buffer[i] = '\0'; // Replace newline with null terminator
-                process_command(command_start, &continue_shell);
-                command_start = script_buffer + i + 1; // Move to the start of the next command
+        if (argc == 2) {
+            int script_fd = open(argv[1], O_RDONLY);
+            if (script_fd == -1) {
+                perror("Error opening script file");
+                exit(EXIT_FAILURE);
             }
-        }
-        if (command_start < script_buffer + total_bytes_read) {
-            process_command(command_start, &continue_shell);
-        }
+            char script_buffer[MAX_CMD_LEN * MAX_ARGS];
+            ssize_t total_bytes_read = read(script_fd, script_buffer, sizeof(script_buffer));
+            if (total_bytes_read < 0) {
+                perror("read");
+                exit(EXIT_FAILURE);
+            }
+            script_buffer[total_bytes_read] = '\0';
 
-        close(script_fd);
-    } else {
-            // Interactive mode
+            char *command_start = script_buffer;
+            for (ssize_t i = 0; i < total_bytes_read; ++i) {
+                if (script_buffer[i] == '\n' || script_buffer[i] == '\0') {
+                    script_buffer[i] = '\0';
+                    process_command(command_start, &continue_shell);
+                    command_start = script_buffer + i + 1;
+                }
+            }
+            if (command_start < script_buffer + total_bytes_read) {
+                process_command(command_start, &continue_shell);
+            }
+
+            close(script_fd);
+        } else {
             welcome_message();
             while (continue_shell) {
                 printf("mysh> ");
@@ -82,7 +79,6 @@ int main(int argc, char *argv[]) {
                     perror("read");
                     exit(EXIT_FAILURE);
                 } else if (bytes_read == 0) {
-                    // End of input stream
                     break;
                 }
                 command[bytes_read] = '\0';
@@ -107,11 +103,8 @@ void process_command(char *cmd, int *continue_shell) {
     char *args[MAX_ARGS];
     tokenize_command(cmd, args);
     expand_wildcards(args);
-
-    // Removed direct call to handle_redirection
-
     handle_pipes(args);
-    
+
     if (strcmp(args[0], "cd") == 0) {
         handle_cd(args);
     } else if (strcmp(args[0], "pwd") == 0) {
@@ -131,14 +124,44 @@ void execute_command(char *args[MAX_ARGS]) {
         perror("fork");
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
-        handle_redirection(args); // Moved inside child process
-        execvp(args[0], args);
-        perror("execvp");
+        char fullpath[PATH_MAX];
+        if (!find_command_path(args[0], fullpath)) {
+            fprintf(stderr, "%s: Command not found\n", args[0]);
+            exit(EXIT_FAILURE);
+        }
+        handle_redirection(args);
+        execv(fullpath, args);
+        perror("execv");
         exit(EXIT_FAILURE);
     } else {
         int status;
         waitpid(pid, &status, 0);
     }
+}
+
+char *find_command_path(const char *cmd, char *fullpath) {
+    if (strchr(cmd, '/')) {
+        strcpy(fullpath, cmd);
+        return fullpath;
+    }
+
+    const char *path_env = getenv("PATH");
+    if (!path_env) return NULL;
+
+    char *path = strdup(path_env);
+    char *dir = strtok(path, ":");
+
+    while (dir != NULL) {
+        snprintf(fullpath, PATH_MAX, "%s/%s", dir, cmd);
+        if (access(fullpath, X_OK) == 0) {
+            free(path);
+            return fullpath;
+        }
+        dir = strtok(NULL, ":");
+    }
+
+    free(path);
+    return NULL;
 }
 
 
