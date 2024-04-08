@@ -101,8 +101,6 @@ void goodbye_message() {
 }
 
 void process_command(char *cmd, int *continue_shell) {
-    while (*cmd == ' ' || *cmd == '\t') cmd++;
-
     // Handle Comments
     if (*cmd == '#' || *cmd == '\0') {
         return; // Ignore comments and empty lines
