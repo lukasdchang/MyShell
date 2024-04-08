@@ -12,57 +12,31 @@ notes:
 
 Testing:
     - tokenizing
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - Wildcards
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - Redirection
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - Pipelines
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - Conditionals
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - Running with script (Batch mode)
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - exit
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - cd
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - pwd
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - which
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - tokenizing
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - tokenizing
-        - expected:
-        - how it fails: 
-        - how to test:
+        
     - tokenizing
-        - expected:
-        - how it fails: 
-        - how to test:
+        
 
 State of the code:
     - reading the command
