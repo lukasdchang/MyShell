@@ -110,15 +110,38 @@ void goodbye_message() {
 void process_command(char *cmd, int *continue_shell) {
     char *args[MAX_ARGS];
     tokenize_command(cmd, args);
-    
+
     // Early return if no command is entered
     if (args[0] == NULL) {
         return;
     }
 
+    // Handle conditional commands based on the success or failure of the previous command
+    if (strcmp(args[0], "then") == 0) {
+        if (last_command_success != 1) {
+            // Skip the current command as the last command failed
+            return;
+        }
+        // Remove the 'then' token to execute the command that follows
+        for (int i = 0; args[i] != NULL; i++) {
+            args[i] = args[i + 1];
+        }
+    } else if (strcmp(args[0], "else") == 0) {
+        if (last_command_success != 0) {
+            // Skip the current command as the last command succeeded
+            return;
+        }
+        // Remove the 'else' token to execute the command that follows
+        for (int i = 0; args[i] != NULL; i++) {
+            args[i] = args[i + 1];
+        }
+    }
+
+    // Continue as before after handling conditionals
+
     // Expand wildcards (before splitting the command for pipes)
     expand_wildcards(args);
-    
+
     // Check if the command contains a pipe
     int pipe_pos = -1;
     for (int i = 0; args[i] != NULL; i++) {
@@ -135,7 +158,6 @@ void process_command(char *cmd, int *continue_shell) {
     }
 
     // Handle redirection (for non-piped commands)
-    handle_redirection(args);
     
     // Check for built-in commands
     if (strcmp(args[0], "cd") == 0) {
@@ -178,20 +200,22 @@ char *find_command_path(const char *cmd, char *fullpath) {
 
 
 void execute_command(char *args[MAX_ARGS]) {
-
     pid_t pid = fork();
     if (pid == -1) {
         perror("fork");
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
+        // Only handle redirection in the child process
         char fullpath[PATH_MAX];
         if (!find_command_path(args[0], fullpath)) {
             fprintf(stderr, "%s: Command not found\n", args[0]);
             exit(EXIT_FAILURE);
         }
-        handle_redirection(args);
-        execv(fullpath, args);
-        perror("execv");
+        
+        handle_redirection(args); // Move this inside the child process
+
+        execv(fullpath, args); // Execute the command
+        perror("execv"); // If execv returns, there was an error
         exit(EXIT_FAILURE);
     } else {
         int status;
@@ -201,10 +225,6 @@ void execute_command(char *args[MAX_ARGS]) {
         } else {
             last_command_success = 0; // Consider it a failure if the child didn't exit normally
         }
-    }
-
-    if (strcmp(args[0], "cat") == 0) { // add new line if cat was run (formatting purposes)
-        printf("\n");
     }
 }
 
@@ -308,42 +328,30 @@ void expand_wildcards(char *args[MAX_ARGS]) {
 }
 
 void handle_redirection(char *args[MAX_ARGS]) {
-    for (int i = 0; args[i] != NULL; ) {
-        int fd = -1;
-        int redirect_position = -1; // Position of the redirection operator in args
-
-        if (strcmp(args[i], "<") == 0) {
-            fd = open(args[i + 1], O_RDONLY);
-            redirect_position = i;
-        } else if (strcmp(args[i], ">") == 0) {
-            fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0640);
-            redirect_position = i;
-        }
-
-        if (fd == -1) {
-            i++; // No redirection found, move to the next argument
-            continue;
-        }
-
-        // Perform the actual redirection
-        if (args[i][0] == '<') {
-            if (dup2(fd, STDIN_FILENO) == -1) {
+    for (int i = 0; args[i] != NULL; i++) {
+        if (strcmp(args[i], "<") == 0 || strcmp(args[i], ">") == 0) {
+            int fd;
+            if (strcmp(args[i], "<") == 0) {
+                fd = open(args[i + 1], O_RDONLY);
+            } else { // ">"
+                fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0640);
+            }
+            if (fd == -1) {
+                perror("open");
+                exit(EXIT_FAILURE);
+            }
+            if (dup2(fd, strcmp(args[i], "<") == 0 ? STDIN_FILENO : STDOUT_FILENO) == -1) {
                 perror("dup2");
                 exit(EXIT_FAILURE);
             }
-        } else if (args[i][0] == '>') {
-            if (dup2(fd, STDOUT_FILENO) == -1) {
-                perror("dup2");
-                exit(EXIT_FAILURE);
-            }
-        }
-        close(fd);
+            close(fd);
 
-        // Remove redirection operators and filenames from args
-        for (int j = redirect_position; args[j + 2] != NULL; j++) {
-            args[j] = args[j + 2];
+            // Shift args left over redirection operators
+            for (int j = i; args[j - 1] != NULL; j++) {
+                args[j] = args[j + 2];
+            }
+            i--; // Adjust index to reflect shifted elements
         }
-        args[i] = NULL; // Terminate args array earlier due to removal
     }
 }
 
