@@ -15,7 +15,11 @@ State of the code:
         - wildcards
             - works
         - redirection
-            - does not work
+            - works 
+            - fix formatting 
+            - for example:
+                - mysh> cat < test1.txt
+                  this is content from test1.txtmysh> 
         - pipelines
             - does not work
         - conditionals
