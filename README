@@ -1,4 +1,7 @@
 # myshell
+ldc105 - Lukas Chang
+yn164 - Yousef Naam 
+
 notes: 
     - interactive mode is when the input comes from a terminal, it will print
         welcome and good-bye messages and a prompt before reading the next command.
