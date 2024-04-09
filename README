@@ -2,44 +2,107 @@
 ldc105 - Lukas Chang
 yn164 - Yousef Naam 
 
+How to run: 
+    make 
+        compiles the code
+    make clean 
+        deletes compile file
+    ./mysh bunchatests/myscript.sh
+        runs tests
+
 Design Notes:
-    - tokenize_command() drew inspiration from previous project, Spell Checker, to implement tokenization of the command aruments.
-        - uses strtok() to tokenize each command and puts each one into an args[] array.
     - we decided we wanted to put main at the top instead of the bottom as we usually have done in the past because it made the 
         code easier to understand since it was chronological.
         - because we made this choice, we had to use function prototypes above the main
-    - one issue we were runnning into was the formatting for when the cat command is called by the user. when cat was called, 
-        the output would not print out a new line. 
+    - one issue we were running into was the formatting for when the cat command is called by the user. when cat was called, 
+        the output would not print out a new line. we tried putting a new line after ever command but some commands already 
+        were properly formatted which meant when most commands were called they would have an unexpected new line. so we decided to 
+        just include a check for when cat command is called and make a new line for it in the execute_command()
+    - for process_command(), we added a check for script comments which the code will ignore. 
+        - then the tokenize_command() is called.
+            - tokenize_command() drew inspiration from previous project, Spell Checker, to implement tokenization of the 
+                command aruments.
+            - uses strtok() to tokenize each command and puts each one into an args[] array.
+            - it will only tokenize the words within the quotation marks to handle cases that the user enters a word with ""
+                for example echo "hi", it will ignore those parenthese similar to the way bash works.
+        - we implemented the conditional command checks before we call the expand_wildcards() and pipe checks because we ran into a couple
+            issues if we did any other order.
+        - for expand_wildcards() we used the glob() function to serach for all pathnames that matched the pattern of wildcards
+        - for handle_redirection, we originally called it within the process_command() function along with all the other functions
+            though this caused many issues and found that the only solution was to call it within the child process of execute_command
+        - pipe handling originally was going to consist of one function but that was difficult to implement for us so we had to use a check
+            for if the command contains a pipe within the process_command function.
+        - now after all those checks, it will check for the build in command such as cd, pwd, which, exit, then 
+            all the other codes through execute command.
+            - handle_cd() and handle_pwd() was relatively straight forward, handle_which was a little confusing and we weren't sure how to test
+                it out but eventually located the /usr/local/bin, /usr/bin, and /bin in our mac to test it out on. 
+            - we originally had trouble printing out a goodbye message as exit was called so we went with printing the goodbye message after the
+                while loop within the main. 
+    - originally we mistakenly used execvp() to execute commands, it wasn't until later in development that we read in the bottom of 
+        the project description that we allowed to use that and that we had to use execv() instead. this caused us needing to change a lot
+        of out code around and ended up needing to implement a new function known as find_command_path() as the full path of the executable
+        file is required to run the function.
 
-Testing:
-    - tokenizing
-        
-    - Wildcards
-        
-    - Redirection
-        
-    - Pipelines
-        
-    - Conditionals
-        
-    - Running with script (Batch mode)
-        
-    - exit
-        
-    - cd
-        
-    - pwd
-        
-    - which
-        
-    - tokenizing
-        
-    - tokenizing
-        
-    - tokenizing
-        
+Testing Plan:
+    Requirements:
+        Tokenizing: 
+            - Breaking down command input into identifiable tokens that can be processed separately.
+        Wildcards: 
+            - Correct interpretation and expansion of wildcard patterns.
+        Redirection: 
+            - Proper handling of input and output redirection.
+        Pipelines: 
+            - Linking the output of one command as the input to another.
+        Conditionals: 
+            - Executing different commands based on the success or failure of previous commands.
+        Running with script (Batch mode): 
+            - Ability to run a series of commands from a file.
+        exit: 
+            - Exiting the shell cleanly.
+        cd: 
+            - Changing the current directory.
+        pwd: 
+            - Printing the current directory.
+        which: 
+            - Locating a command.''
+    Test Cases:
+        Tokenizing: 
+            - Ensure commands are correctly broken down into tokens, e.g., "ls -l" into "ls" and "-l".
+        Wildcards: 
+            - Test wildcard patterns such as ".txt" to list all text files, "input?.txt" to 
+                list files that match the pattern, and "o" for files starting with 'o'.
+        Redirection: 
+            - Verify redirection operations, like using "cat input.txt > output.txt" to 
+                redirect the contents of input.txt to output.txt.
+            - input.txt contains "this is content from input.txt" and output.txt should begin empty. 
+                Once it redirects, output.txt should have "this is content from input.txt" within it.
+        Pipelines: 
+            - Test pipelines by combining commands, for example, "ls | wc -w" to count the
+                number of words in the output of the ls command.
+            - Should print out 9 which is the number of directories in the bunchatests directory.
+        Conditionals: 
+            - Validate the handling of conditionals, ensuring that "then" and "else"
+                branches execute under the correct conditions.
+            - myscript.sh should contain a couple conditional tests and myconditional.sh and myconditional2.sh should contain more.
+            - To test it in interactive mode run each line of myconditional2.sh one at a time.
+        Batch Mode: 
+            - Run a script file with a series of commands to ensure the shell can execute commands in batch mode.
+        Exit: 
+            - Test the "exit" command to ensure the shell exits with a goodbye message.
+        Change Directory (cd) and Print Working Directory (pwd):   
+            - Check if "cd" changes the directory as expected and "pwd" prints the correct directory.
+        Which: 
+            - Verify "which" command locates the correct path of commands.
+    How to test:
+        - Note: All test files exist in the directory called "bunchatests" 
+        - Run in batch mode:
+            ./mysh bunchatests/myscript.sh
+        - myscript.sh is the script file that tests all the above test cases
+        - myconditional.sh and myconditional2.sh are additional testcases that tests conditionals 
+        - The multiple input?.txt files are meant to test wildcards
+        - directory1 and directory2 are meant to test cd
 
-State of the code:
+State of the code (ignore this was for our development process):
     - reading the command
         - tokenizing
             - works
@@ -75,12 +138,6 @@ State of the code:
         - works
     - which
         - works
-
-    How to run: 
-        make 
-            compiles the code
-        make clean 
-            deletes compile file and empties test2.txt
 
 
 for lukas (ignore)
