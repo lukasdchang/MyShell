@@ -6,6 +6,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <glob.h>
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h> // For PATH_MAX
 
@@ -301,15 +302,44 @@ int handle_exit(char *args[MAX_ARGS]) {
 }
 
 void tokenize_command(char *cmd, char *args[MAX_ARGS]) {
-    // Tokenize the command
-    char *token;
     int i = 0;
-    token = strtok(cmd, " \n");
-    while (token != NULL && i < MAX_ARGS - 1) {
-        args[i++] = token;
-        token = strtok(NULL, " \n");
+    char *cursor = cmd;
+    char *end;
+    while (*cursor != '\0' && i < MAX_ARGS - 1) {
+        while (isspace((unsigned char)*cursor)) cursor++;  // Skip leading spaces
+
+        char quote_char = '\0';
+        if (*cursor == '"' || *cursor == '\'') {  // Start of a quoted argument
+            quote_char = *cursor;  // Remember the type of quote
+            cursor++;  // Skip the opening quote
+        }
+        end = cursor;
+
+        if (quote_char != '\0') {
+            // Find the closing quote that matches the opening quote
+            while (*end != '\0' && *end != quote_char) end++;
+            if (*end == '\0') {
+                // Syntax error: unmatched quote
+                fprintf(stderr, "Unmatched quote in command.\n");
+                args[i++] = NULL;  // Terminate arguments list
+                return;
+            }
+        } else {
+            // Find the end of the unquoted argument
+            while (*end != '\0' && !isspace((unsigned char)*end)) end++;
+        }
+
+        if (*end == '\0') {  // End of command
+            args[i++] = cursor;
+            break;
+        } else {  // Middle of command
+            *end = '\0';  // Terminate the current argument
+            args[i++] = cursor;
+            cursor = end + 1;  // Move past the end of the current argument
+            if (quote_char != '\0') cursor++;  // If inside quotes, move past the closing quote
+        }
     }
-    args[i] = NULL;
+    args[i] = NULL;  // Null-terminate the list of arguments
 }
 
 void expand_wildcards(char *args[MAX_ARGS]) {
