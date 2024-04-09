@@ -2,13 +2,14 @@
 ldc105 - Lukas Chang
 yn164 - Yousef Naam 
 
-notes: 
-    - interactive mode is when the input comes from a terminal, it will print
-        welcome and good-bye messages and a prompt before reading the next command.
-    - batch mode is when the user provides a script file containing commands to be executed.
-    - use the similar tokenization algorithm we used in spell checker to read the input command lines
-
-    Great video to see what exactly we are supposed to be making -> https://youtu.be/I4EWvMFj37g?si=e1oOJF3oE9tsEzhr
+Design Notes:
+    - tokenize_command() drew inspiration from previous project, Spell Checker, to implement tokenization of the command aruments.
+        - uses strtok() to tokenize each command and puts each one into an args[] array.
+    - we decided we wanted to put main at the top instead of the bottom as we usually have done in the past because it made the 
+        code easier to understand since it was chronological.
+        - because we made this choice, we had to use function prototypes above the main
+    - one issue we were runnning into was the formatting for when the cat command is called by the user. when cat was called, 
+        the output would not print out a new line. 
 
 Testing:
     - tokenizing
