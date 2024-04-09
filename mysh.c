@@ -8,7 +8,7 @@
 #include <glob.h>
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h> // Importing for PATH_MAX
+#include <limits.h> // Importing PATH_MAX
 
 #define MAX_CMD_LEN 1024
 #define MAX_ARGS 64
